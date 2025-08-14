@@ -3,6 +3,12 @@ import pandas as pd
 from d3rlpy.datasets import MDPDataset
 from d3rlpy.algos import BC, BCConfig, DiscreteBC, DiscreteBCConfig
 
+def pwm_to_index(pwm):
+    return int(pwm + 255)
+
+def index_to_pwm(index):
+    return int(index - 255)
+
 def build_mdp_dataset_from_df(log_df, terminal_col='Terminal', done_str='done'):
     """
     Builds a d3rlpy MDPDataset from a pandas DataFrame of logged data using
@@ -23,11 +29,13 @@ def build_mdp_dataset_from_df(log_df, terminal_col='Terminal', done_str='done'):
     # Observations are the angle (theta) and angular velocity (theta_dot)
     observations = log_df[['theta', 'theta_dot']].values.astype(np.float32)
     # Actions are the PWM signal
-    actions = log_df['PWM'].values.astype(np.float32).reshape(-1, 1)
+    log_df['PWM_index'] = log_df['PWM'].apply(pwm_to_index)
+    actions = log_df['PWM_index'].values.astype(np.int64).reshape(-1, 1)
+    # Use actions in MDPDataset
     
     # Reward design: penalize angle and action, and a large negative reward on terminal steps
     k_angle, k_action = 1.0, 0.01
-    rewards = (-(k_angle * np.abs(log_df['theta'].values) + k_action * np.abs(log_df['PWM'].values))).astype(np.float32)
+    rewards = -1*(k_angle * np.abs(log_df['theta'].values))
     
     # Identify terminal steps for episode segmentation
     terminals = (log_df[terminal_col] == done_str).values
@@ -58,14 +66,14 @@ log_df.columns = ['theta', 'theta_dot', 'PWM', 'Terminal']
 
 # Build the MDP dataset from the DataFrame
 dataset = build_mdp_dataset_from_df(log_df)
-config = DiscreteBCConfig(batch_size=1024, gamma=0.99, learning_rate=1e-4)
+config = DiscreteBCConfig(batch_size=256, gamma=1, learning_rate=1e-4)
 
 # Initialize the Behavior Cloning (BC) agent with a learning rate
 bc = DiscreteBC(config, device='cpu', enable_ddp=False)
 
 # Fit the model to the dataset
 # This trains the agent to mimic the actions in the log data
-bc.fit(dataset, n_steps=50)
+bc.fit(dataset, n_steps=10000)
 
 # Save the trained policy model to a file
 bc.save_model("bc_policy.pt")
