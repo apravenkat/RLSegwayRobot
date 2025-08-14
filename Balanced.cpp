@@ -39,38 +39,32 @@ Balanced::Balanced()
 
 void Balanced::Total_Control()
 {
-  pwm_left = balance_control_output - speed_control_output - rotation_control_output;//Superposition of Vertical Velocity Steering Ring
-  pwm_right = balance_control_output - speed_control_output + rotation_control_output;//Superposition of Vertical Velocity Steering Ring
+  pwm_left = balance_control_output ;//Superposition of Vertical Velocity Steering Ring
+  pwm_right = balance_control_output;//Superposition of Vertical Velocity Steering Ring
 
   pwm_left = constrain(pwm_left, -255, 255);
   pwm_right = constrain(pwm_right, -255, 255);
+  Serial.println((pwm_left));
 
-  if(EXCESSIVE_ANGLE_TILT)
-  {
+   while(EXCESSIVE_ANGLE_TILT || PICKED_UP)
+  { 
+    Mpu6050.DataProcessing();
     Motor.Stop();
   }
-  if (pwm_left < 0)
-  {
-    Motor.Control(AIN1,1,PWMA_LEFT,-pwm_left);
-  }
-  else
-  {
-    Motor.Control(AIN1,0,PWMA_LEFT,pwm_left);
-  }
-  if (pwm_right < 0)
-  {
-    Motor.Control(BIN1,1,PWMB_RIGHT,-pwm_right);      
-  }
-  else
-  {
-    Motor.Control(BIN1,0,PWMB_RIGHT,pwm_right);
-  }
+  
+  (pwm_left < 0) ?  (Motor.Control(AIN1,1,PWMA_LEFT,-pwm_left)):
+                    (Motor.Control(AIN1,0,PWMA_LEFT,pwm_left));
+  
+  (pwm_right < 0) ? (Motor.Control(BIN1,1,PWMB_RIGHT,-pwm_right)): 
+                    (Motor.Control(BIN1,0,PWMB_RIGHT,pwm_right));
 }
 
 void Balanced::Get_EncoderSpeed()
 {
-  encoder_left_pulse_num_speed += pwm_left < 0 ? (-Motor::encoder_count_left_a) : Motor::encoder_count_left_a;
-  encoder_right_pulse_num_speed += pwm_right < 0 ? (-Motor::encoder_count_right_a) : Motor::encoder_count_right_a;
+  encoder_left_pulse_num_speed += pwm_left < 0 ? (-Motor::encoder_count_left_a) : 
+                                                  Motor::encoder_count_left_a;
+  encoder_right_pulse_num_speed += pwm_right < 0 ? (-Motor::encoder_count_right_a) :
+                                                  Motor::encoder_count_right_a;
   Motor::encoder_count_left_a=0;
   Motor::encoder_count_right_a=0;
 }

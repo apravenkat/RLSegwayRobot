@@ -23,13 +23,5 @@ void loop()
 {
   int direction_buf[] = {FORWARD,BACK,LEFT,RIGHT,STOP};
   static unsigned long print_time;
-  
-  for(int i=0;i<5;)
-  {
-      if(millis() - print_time > 5000)
-   { 
-      print_time = millis();
-      Balanced.Motion_Control(direction_buf[i++]);
-   }
-  }
+  Balanced.Motion_Control(STOP);
 }
