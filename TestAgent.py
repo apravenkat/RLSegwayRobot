@@ -2,7 +2,7 @@ from d3rlpy.algos import DiscreteBC, DiscreteBCConfig
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
+from d3rlpy.models.encoders import VectorEncoderFactory
 def pwm_to_index(pwm):
     return int(pwm + 255)
 
@@ -12,7 +12,8 @@ def index_to_pwm(index):
 log_df = pd.read_csv("CleanedLogTest.csv")
 log_df.columns = ['theta', 'theta_dot', 'PWM', 'Terminal']
 
-config = DiscreteBCConfig(batch_size=256, gamma=1, learning_rate=1e-4)
+config = DiscreteBCConfig(encoder_factory=VectorEncoderFactory(
+        hidden_units=[512, 512], activation="relu"), batch_size=1, gamma=1, learning_rate=1e-4)
 
 discrete_BC = DiscreteBC(config=config, device='cpu', enable_ddp=False)
 observations = log_df[['theta', 'theta_dot']].values.astype(np.float32)
