@@ -32,31 +32,78 @@ static void Timer2::interrupt()
 
 Balanced::Balanced()
 {
-  kp_balance = 55, kd_balance = 0.75;
+  kp_balance = 55, kd_balance = 1;
   kp_speed = 10, ki_speed = 0.26;
   kp_turn = 2.5, kd_turn = 0.5;
 }
 
 void Balanced::Total_Control()
 {
-  pwm_left = balance_control_output ;//Superposition of Vertical Velocity Steering Ring
-  pwm_right = balance_control_output;//Superposition of Vertical Velocity Steering Ring
-
-  pwm_left = constrain(pwm_left, -255, 255);
-  pwm_right = constrain(pwm_right, -255, 255);
-  Serial.println((pwm_left));
-
-   while(EXCESSIVE_ANGLE_TILT || PICKED_UP)
-  { 
-    Mpu6050.DataProcessing();
-    Motor.Stop();
-  }
+  if(MODE==0)
+  {
+    pwm_left = balance_control_output ;//Superposition of Vertical Velocity Steering Ring
+    pwm_right = balance_control_output ;//Superposition of Vertical Velocity Steering Ring
+    pwm_left = constrain(pwm_left, -255, 255);
+    pwm_right = constrain(pwm_right, -255, 255);
   
-  (pwm_left < 0) ?  (Motor.Control(AIN1,1,PWMA_LEFT,-pwm_left)):
+    if(Serial.availableForWrite())
+    {
+      Serial.print(kalmanfilter.angle,1);
+      Serial.print(",");
+      Serial.print(kalmanfilter.Gyro_x,1);
+      Serial.print(",");
+      Serial.print((int)pwm_left);
+      Serial.print(",");
+      Serial.println("Not Done");
+    }
+
+    while(EXCESSIVE_ANGLE_TILT || PICKED_UP)
+    { 
+      Serial.print(kalmanfilter.angle,1);
+      Serial.print(",");
+      Serial.print(kalmanfilter.Gyro_x,1);
+      Serial.print(",");
+      Serial.print((int)pwm_left);
+      Serial.print(",");
+      Serial.println("Done");
+      Mpu6050.DataProcessing();
+      Motor.Stop();
+    }
+  
+    (pwm_left < 0) ?  (Motor.Control(AIN1,1,PWMA_LEFT,-pwm_left)):
                     (Motor.Control(AIN1,0,PWMA_LEFT,pwm_left));
   
-  (pwm_right < 0) ? (Motor.Control(BIN1,1,PWMB_RIGHT,-pwm_right)): 
+    (pwm_right < 0) ? (Motor.Control(BIN1,1,PWMB_RIGHT,-pwm_right)): 
                     (Motor.Control(BIN1,0,PWMB_RIGHT,pwm_right));
+  }
+  else
+  {
+    if(Serial.availableForWrite())
+    {
+      Serial.print(kalmanfilter.angle,1);
+      Serial.print(",");
+      Serial.println(kalmanfilter.Gyro_x,1);
+    }
+    if(Serial.available()>0)
+    {
+      String input = Serial.readStringUntil('\n');
+      input.trim();
+      pwm_left = input.toDouble();
+      pwm_right = pwm_left;
+      pwm_left = constrain(pwm_left, -255, 255);
+      pwm_right = constrain(pwm_right, -255, 255);
+      while(EXCESSIVE_ANGLE_TILT || PICKED_UP)
+      { 
+        Mpu6050.DataProcessing();
+        Motor.Stop();
+      }
+    (pwm_left < 0) ?  (Motor.Control(AIN1,1,PWMA_LEFT,-pwm_left)):
+                    (Motor.Control(AIN1,0,PWMA_LEFT,pwm_left));
+  
+    (pwm_right < 0) ? (Motor.Control(BIN1,1,PWMB_RIGHT,-pwm_right)): 
+                    (Motor.Control(BIN1,0,PWMB_RIGHT,pwm_right)); 
+    }
+  }
 }
 
 void Balanced::Get_EncoderSpeed()
@@ -135,6 +182,7 @@ void Balanced::PI_SpeedRing()
 void Balanced::PD_VerticalRing()
 {
   balance_control_output= kp_balance * (kalmanfilter.angle - 0) + kd_balance * (kalmanfilter.Gyro_x - 0);
+  
 }
 
 void Balanced::PI_SteeringRing()

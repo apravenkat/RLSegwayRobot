@@ -60,6 +60,7 @@ class Balanced
    #define ANGLE_MAX 27
    #define EXCESSIVE_ANGLE_TILT (kalmanfilter.angle < ANGLE_MIN || ANGLE_MAX < kalmanfilter.angle)
    #define PICKED_UP (kalmanfilter.angle6 < -10 || 22 < kalmanfilter.angle6)
+   #define MODE 1
 };
 
 class Timer2
