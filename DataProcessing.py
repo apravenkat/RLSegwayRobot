@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 # Load your CSV normally (only 1 column now)
-df = pd.read_csv("test_log.csv", header=None)
+df = pd.read_csv("log.csv", header=None)
 df = df.iloc[1:].reset_index(drop=True)
 
 # Split the single column into 4 separate columns

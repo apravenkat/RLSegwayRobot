@@ -35,9 +35,7 @@ def build_mdp_dataset_from_df(log_df, terminal_col='Terminal', done_str='done'):
     
     # Reward design: penalize angle and action, and a large negative reward on terminal steps
     k_angle, k_action = 1.0, 0.01
-    rewards = -1*(k_angle * np.abs(log_df['theta'].values))
-    
-    # Identify terminal steps for episode segmentation
+    rewards = -1*(k_angle * np.abs(log_df['theta'].values)) - (0.1 * np.abs(log_df['theta_dot'].values))    # Identify terminal steps for episode segmentation
     terminals = (log_df[terminal_col] == done_str).values
 
     # Override the reward for terminal steps with a very large penalty
